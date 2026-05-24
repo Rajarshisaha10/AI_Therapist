@@ -4,6 +4,7 @@ import re
 import smtplib
 import time
 from email.message import EmailMessage
+from smtplib import SMTPException
 
 from dotenv import load_dotenv
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
@@ -50,6 +51,7 @@ OTP_EXPIRY_SECONDS = int(os.getenv("OTP_EXPIRY_SECONDS", "300"))
 SHOW_OTP_IN_FLASH = os.getenv("SHOW_OTP_IN_FLASH", "true").lower() == "true"
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_TIMEOUT_SECONDS = int(os.getenv("EMAIL_TIMEOUT_SECONDS", "10"))
 EMAIL_USERNAME = os.getenv("EMAIL_USERNAME")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_FROM = os.getenv("EMAIL_FROM") or EMAIL_USERNAME
@@ -123,6 +125,10 @@ def email_configured():
 
 
 def send_otp_to_email(email, otp):
+    if SHOW_OTP_IN_FLASH:
+        print(f"OTP for {email}: {otp}")
+        return "console"
+
     if not email_configured():
         print(f"OTP for {email}: {otp}")
         return "console"
@@ -136,7 +142,7 @@ def send_otp_to_email(email, otp):
         f"It expires in {OTP_EXPIRY_SECONDS // 60} minutes."
     )
 
-    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as smtp:
+    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=EMAIL_TIMEOUT_SECONDS) as smtp:
         smtp.starttls()
         smtp.login(EMAIL_USERNAME, EMAIL_PASSWORD)
         smtp.send_message(message)
@@ -180,7 +186,16 @@ def login():
         }
         session.modified = True
 
-        delivery_method = send_otp_to_email(email, otp)
+        try:
+            delivery_method = send_otp_to_email(email, otp)
+        except (OSError, SMTPException) as exc:
+            print(f"Email OTP Error: {type(exc).__name__}: {exc}")
+            flash(
+                "We could not send the verification email. Please check the Gmail settings and try again.",
+                "error",
+            )
+            return render_template("login.html", next_url=next_url, email=email), 502
+
         if SHOW_OTP_IN_FLASH or delivery_method == "console":
             flash(f"Development OTP: {otp}", "info")
         else:
