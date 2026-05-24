@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seren · Your Mental Wellness Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ── DESIGN TOKENS ──────────────────────────── */
+    :root {
+      --bg:          #f8f7ff;
+      --white:       #ffffff;
+
+      --blue-deep:   #2e4fa3;
+      --blue-mid:    #4a6fd4;
+      --blue-soft:   #7fa3e8;
+      --blue-light:  #c8d8f8;
+      --blue-pale:   #eef2fd;
+
+      --pink-deep:   #b0527a;
+      --pink-mid:    #d47898;
+      --pink-soft:   #eeaac0;
+      --pink-light:  #f8d8e5;
+      --pink-pale:   #fdf0f5;
+
+      --text:        #1c1830;
+      --text-muted:  #7a718e;
+      --border:      #e4ddf5;
+      --shadow-b:    rgba(46,79,163,0.09);
+      --shadow-p:    rgba(176,82,122,0.07);
+
+      --ff-display:  'DM Serif Display', serif;
+      --ff-body:     'DM Sans', sans-serif;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--ff-body);
+      background: var(--bg); color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* Grain */
+    body::before {
+      content:''; position:fixed; inset:0; pointer-events:none; z-index:999; opacity:0.4;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    a { text-decoration:none; color:inherit; }
+
+    /* ── NAV ─────────────────────────────────────── */
+    nav {
+      position: fixed; top:0; left:0; right:0; z-index:100;
+      height: 66px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2.5rem;
+      background: rgba(248,247,255,0.82);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex; align-items: center; gap: 0.7rem;
+      font-family: var(--ff-display); font-size: 1.35rem; color: var(--text);
+    }
+    .nav-brand .logo {
+      width: 36px; height: 36px; border-radius: 11px;
+      background: linear-gradient(135deg, var(--blue-mid), var(--pink-mid));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 3px 10px rgba(74,111,212,0.28);
+    }
+    .nav-brand .logo svg { width: 18px; height: 18px; }
+
+    .nav-links { display: flex; align-items: center; gap: 0.25rem; }
+    .nav-links a {
+      padding: 0.45rem 0.875rem; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 500; color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .nav-links a:hover { background: var(--blue-pale); color: var(--blue-mid); }
+    .nav-user {
+      display:flex; align-items:center; gap:0.5rem;
+      padding:0.35rem 0.65rem; border-radius:999px;
+      background:var(--white); border:1px solid var(--border);
+      color:var(--text-muted); font-size:0.78rem; font-weight:600;
+      max-width:210px;
+    }
+    .nav-user span {
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+
+    .nav-cta {
+      background: linear-gradient(135deg, var(--blue-mid), var(--pink-mid)) !important;
+      color: white !important; border-radius: 9px !important;
+      font-weight: 600 !important;
+      box-shadow: 0 3px 12px rgba(74,111,212,0.3) !important;
+    }
+    .nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 16px rgba(74,111,212,0.38) !important;
+      background: linear-gradient(135deg, var(--blue-deep), var(--pink-deep)) !important;
+    }
+
+    /* ── HERO ─────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 7rem 2.5rem 5rem;
+      position: relative; overflow: hidden;
+    }
+
+    .hero-blob-pink {
+      position:absolute; top:-10%; right:-5%;
+      width:620px; height:620px; border-radius:50%;
+      background: radial-gradient(ellipse, rgba(238,170,192,0.28) 0%, transparent 65%);
+      pointer-events:none;
+    }
+    .hero-blob-blue {
+      position:absolute; bottom:-15%; left:-8%;
+      width:500px; height:500px; border-radius:50%;
+      background: radial-gradient(ellipse, rgba(127,163,232,0.22) 0%, transparent 65%);
+      pointer-events:none;
+    }
+
+    .hero-inner {
+      max-width: 1100px; width:100%; margin:0 auto;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4rem; align-items: center; position: relative; z-index:1;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.38rem 0.875rem;
+      background: var(--pink-pale); border: 1px solid var(--pink-light);
+      border-radius: 999px; margin-bottom: 1.5rem;
+      font-size: 0.78rem; font-weight: 600; color: var(--pink-deep);
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .hero-eyebrow .pulse {
+      width:6px; height:6px; border-radius:50%; background:#69d5a0;
+      animation: pulse-dot 2.5s infinite;
+    }
+    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.55;transform:scale(1.35)} }
+
+    .hero h1 {
+      font-family: var(--ff-display);
+      font-size: clamp(2.8rem, 5vw, 4.2rem);
+      line-height: 1.1; color: var(--text);
+      letter-spacing: -0.02em; margin-bottom: 1.5rem;
+    }
+    .hero h1 em { font-style: italic; color: var(--blue-mid); }
+    .hero h1 .rose { color: var(--pink-deep); }
+
+    .hero-sub {
+      font-size: 1.05rem; line-height: 1.75; color: var(--text-muted);
+      max-width: 430px; margin-bottom: 2.5rem; font-weight: 400;
+    }
+
+    .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.9rem 1.75rem;
+      background: linear-gradient(135deg, var(--blue-mid) 0%, var(--pink-mid) 100%);
+      color: white; border-radius: 12px;
+      font-size: 0.9rem; font-weight: 600;
+      box-shadow: 0 4px 18px rgba(74,111,212,0.32);
+      transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+    }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(74,111,212,0.4); }
+
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.9rem 1.75rem;
+      background: var(--white); color: var(--text);
+      border: 1.5px solid var(--border); border-radius: 12px;
+      font-size: 0.9rem; font-weight: 500;
+      box-shadow: 0 2px 8px var(--shadow-b);
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--blue-light); background: var(--blue-pale); }
+
+    /* Hero right — floating chat card */
+    .hero-right { position: relative; }
+
+    .float-tag {
+      position: absolute; top:-18px; right:20px;
+      background: var(--white); border:1.5px solid var(--border);
+      border-radius:999px; padding:0.38rem 0.875rem;
+      font-size:0.75rem; font-weight:600; color:var(--pink-deep);
+      box-shadow:0 4px 14px var(--shadow-p);
+      display:flex; align-items:center; gap:0.4rem;
+      animation: floatY 3.5s ease-in-out infinite;
+    }
+    @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+
+    .hero-card {
+      background: var(--white); border-radius: 24px; padding: 1.5rem;
+      box-shadow: 0 20px 60px rgba(74,111,212,0.12), 0 0 0 1px var(--border);
+      position: relative; z-index:1;
+    }
+
+    .hc-header {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+      margin-bottom: 1.25rem;
+    }
+    .hc-icon {
+      width:40px; height:40px; border-radius:12px;
+      background: linear-gradient(135deg, var(--blue-mid), var(--pink-mid));
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 3px 10px rgba(74,111,212,0.28);
+    }
+    .hc-icon svg { width:20px; height:20px; }
+    .hc-title {
+      font-family: var(--ff-display); font-size:1.1rem; color:var(--text);
+    }
+    .hc-status {
+      display:flex; align-items:center; gap:0.35rem;
+      font-size:0.72rem; color:var(--text-muted); margin-top:0.1rem;
+    }
+    .hc-status .dot { width:6px; height:6px; border-radius:50%; background:#69d5a0; animation:pulse-dot 2.5s infinite; }
+
+    .hc-messages { display:flex; flex-direction:column; gap:0.8rem; }
+
+    .hcm { display:flex; gap:0.5rem; animation: msgIn 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+    .hcm.user { flex-direction:row-reverse; }
+    .hcm:nth-child(1){animation-delay:0.15s}
+    .hcm:nth-child(2){animation-delay:0.45s}
+    .hcm:nth-child(3){animation-delay:0.8s}
+    .hcm:nth-child(4){animation-delay:1.15s}
+    @keyframes msgIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+    .hcm-av {
+      width:28px; height:28px; border-radius:8px; flex-shrink:0;
+      background:linear-gradient(135deg, var(--blue-mid), var(--pink-mid));
+      display:flex; align-items:center; justify-content:center;
+      align-self:flex-end;
+    }
+    .hcm-av svg { width:13px; height:13px; }
+
+    .hcm-b {
+      max-width:80%; padding:0.65rem 0.9rem;
+      border-radius:1rem; font-size:0.82rem; line-height:1.55;
+    }
+    .hcm.bot .hcm-b {
+      background:var(--blue-pale); color:var(--text);
+      border-bottom-left-radius:4px; border:1px solid var(--blue-light);
+    }
+    .hcm.user .hcm-b {
+      background:linear-gradient(135deg, var(--blue-mid), var(--pink-mid));
+      color:white; border-bottom-right-radius:4px;
+    }
+
+    .hc-input-row {
+      margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);
+      display:flex; gap:0.5rem; align-items:center;
+    }
+    .hc-input {
+      flex:1; background:var(--bg); border:1.5px solid var(--border);
+      border-radius:0.875rem; padding:0.6rem 0.875rem;
+      font-size:0.8rem; color:var(--text-muted); font-family:var(--ff-body);
+      outline: none;
+    }
+    .hc-input:focus { border-color: var(--blue-soft); }
+    .hc-send {
+      width:34px; height:34px; border-radius:10px; border:none;
+      background:linear-gradient(135deg, var(--blue-mid), var(--pink-mid));
+      color:white; display:flex; align-items:center; justify-content:center;
+      cursor:pointer; box-shadow:0 3px 10px rgba(74,111,212,0.3);
+    }
+    .hc-send svg { width:14px; height:14px; }
+
+    /* ── STATS BAR ───────────────────────────────── */
+    .stats-bar {
+      background: linear-gradient(135deg, var(--blue-deep) 0%, #3d3068 50%, var(--pink-deep) 100%);
+      padding: 1.75rem 2.5rem;
+    }
+    .stats-inner {
+      max-width:1100px; margin:0 auto;
+      display:flex; justify-content:space-around; flex-wrap:wrap; gap:2rem;
+    }
+    .stat { text-align:center; }
+    .stat-num {
+      font-family:var(--ff-display); font-size:2.4rem; color:white;
+      line-height:1; margin-bottom:0.3rem;
+      background:linear-gradient(90deg, var(--blue-light), var(--pink-light));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .stat-label { font-size:0.8rem; color:rgba(255,255,255,0.6); }
+
+    /* ── ABOUT ───────────────────────────────────── */
+    .about-section { padding:6rem 2.5rem; background:var(--white); }
+    .section-inner { max-width:1100px; margin:0 auto; }
+
+    .section-tag {
+      display:inline-block; padding:0.35rem 0.875rem;
+      background:var(--blue-pale); border:1px solid var(--blue-light);
+      border-radius:999px; font-size:0.72rem; font-weight:600;
+      color:var(--blue-mid); text-transform:uppercase;
+      letter-spacing:0.05em; margin-bottom:1rem;
+    }
+
+    .about-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:5rem; align-items:center;
+    }
+
+    .about-text h2 {
+      font-family:var(--ff-display);
+      font-size:clamp(2rem,3.5vw,3rem);
+      line-height:1.15; color:var(--text);
+      margin-bottom:1.25rem; letter-spacing:-0.02em;
+    }
+    .about-text h2 em { font-style:italic; color:var(--pink-deep); }
+
+    .about-text p {
+      font-size:1rem; line-height:1.75; color:var(--text-muted); margin-bottom:2rem;
+    }
+
+    .about-list { list-style:none; display:flex; flex-direction:column; gap:0.75rem; }
+    .about-list li {
+      display:flex; align-items:center; gap:0.75rem;
+      font-size:0.9rem; color:var(--text);
+    }
+    .about-list li .chip {
+      width:28px; height:28px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.8rem;
+    }
+    .chip-blue { background:var(--blue-pale); border:1px solid var(--blue-light); }
+    .chip-pink { background:var(--pink-pale); border:1px solid var(--pink-light); }
+
+    /* About — preview panel */
+    .about-preview {
+      background:var(--bg); border-radius:24px;
+      border:1.5px solid var(--border);
+      box-shadow:0 8px 40px var(--shadow-b);
+      overflow:hidden;
+    }
+    .ap-hdr {
+      background:linear-gradient(135deg, var(--blue-deep), #3d3068, var(--pink-deep));
+      padding:1rem 1.25rem;
+      display:flex; align-items:center; gap:0.75rem;
+    }
+    .ap-dots { display:flex; gap:5px; }
+    .ap-dot { width:10px; height:10px; border-radius:50%; opacity:0.55; }
+    .ap-dot:nth-child(1){background:#ff5f57}
+    .ap-dot:nth-child(2){background:#febc2e}
+    .ap-dot:nth-child(3){background:#28c840}
+    .ap-name {
+      font-family:var(--ff-display); font-size:0.95rem;
+      color:rgba(255,255,255,0.85); margin-left:0.5rem;
+    }
+
+    .ap-body { padding:1.25rem; display:flex; flex-direction:column; gap:0.8rem; }
+
+    .apm { display:flex; gap:0.5rem; max-width:80%; }
+    .apm.user { align-self:flex-end; flex-direction:row-reverse; }
+
+    .apm-av {
+      width:26px; height:26px; border-radius:8px; flex-shrink:0;
+      background:linear-gradient(135deg, var(--blue-mid), var(--pink-mid));
+      display:flex; align-items:center; justify-content:center;
+      align-self:flex-end;
+    }
+    .apm-av svg { width:11px; height:11px; }
+
+    .apm-b {
+      padding:0.6rem 0.875rem; border-radius:1rem;
+      font-size:0.82rem; line-height:1.5;
+    }
+    .apm.bot .apm-b {
+      background:var(--white); color:var(--text);
+      border-bottom-left-radius:4px; border:1px solid var(--border);
+    }
+    .apm.user .apm-b {
+      background:linear-gradient(135deg, var(--blue-mid), var(--pink-mid));
+      color:white; border-bottom-right-radius:4px;
+    }
+
+    /* ── FEATURES ─────────────────────────────────── */
+    .features-section { padding:6rem 2.5rem; background:var(--bg); }
+
+    .features-hdr { text-align:center; max-width:580px; margin:0 auto 4rem; }
+    .features-hdr h2 {
+      font-family:var(--ff-display); font-size:clamp(2rem,3.5vw,3rem);
+      color:var(--text); letter-spacing:-0.02em; margin-bottom:1rem;
+    }
+    .features-hdr h2 em { font-style:italic; color:var(--blue-mid); }
+    .features-hdr p { font-size:1rem; color:var(--text-muted); line-height:1.7; }
+
+    .features-grid {
+      max-width:1100px; margin:0 auto;
+      display:grid; grid-template-columns:repeat(2,1fr); gap:1.25rem;
+    }
+
+    .fcard {
+      background:var(--white); border:1.5px solid var(--border);
+      border-radius:20px; padding:2rem;
+      transition:all 0.25s cubic-bezier(0.16,1,0.3,1);
+      position:relative; overflow:hidden;
+    }
+    .fcard::after {
+      content:''; position:absolute; inset:0; border-radius:20px; opacity:0;
+      transition:opacity 0.3s;
+    }
+    .fcard.blue-card::after { background:linear-gradient(135deg, var(--blue-pale) 0%, transparent 55%); }
+    .fcard.pink-card::after { background:linear-gradient(135deg, var(--pink-pale) 0%, transparent 55%); }
+    .fcard:hover { transform:translateY(-4px); box-shadow:0 14px 40px var(--shadow-b); }
+    .fcard:hover::after { opacity:1; }
+    .fcard:hover.blue-card { border-color:var(--blue-light); }
+    .fcard:hover.pink-card { border-color:var(--pink-light); }
+
+    .fcard-icon {
+      width:52px; height:52px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.4rem; margin-bottom:1.25rem; position:relative; z-index:1;
+    }
+    .fcard-icon.bi { background:var(--blue-pale); border:1px solid var(--blue-light); }
+    .fcard-icon.pi { background:var(--pink-pale); border:1px solid var(--pink-light); }
+
+    .fcard h3 {
+      font-family:var(--ff-display); font-size:1.35rem; color:var(--text);
+      margin-bottom:0.625rem; letter-spacing:-0.01em; position:relative; z-index:1;
+    }
+    .fcard p {
+      font-size:0.9rem; line-height:1.7; color:var(--text-muted);
+      position:relative; z-index:1;
+    }
+
+    .fcard.wide {
+      grid-column:span 2;
+      display:flex; gap:2rem; align-items:center;
+    }
+    .fcard.wide .fcard-icon { width:60px; height:60px; font-size:1.7rem; flex-shrink:0; }
+
+    /* ── CTA ──────────────────────────────────────── */
+    .cta-section {
+      padding:6rem 2.5rem;
+      background: linear-gradient(140deg, var(--blue-deep) 0%, #3a2d72 45%, var(--pink-deep) 100%);
+      position:relative; overflow:hidden;
+    }
+    .cta-orb {
+      position:absolute; border-radius:50%; pointer-events:none;
+      background:rgba(255,255,255,0.05);
+    }
+    .cta-orb-1 { width:500px; height:500px; top:-30%; right:-8%; }
+    .cta-orb-2 { width:380px; height:380px; bottom:-30%; left:-5%; }
+
+    .cta-inner {
+      max-width:680px; margin:0 auto; text-align:center; position:relative; z-index:1;
+    }
+    .cta-chip {
+      display:inline-block; padding:0.35rem 0.875rem; border-radius:999px;
+      background:rgba(248,216,229,0.15); border:1px solid rgba(248,216,229,0.3);
+      font-size:0.72rem; font-weight:600; color:var(--pink-light);
+      text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1.5rem;
+    }
+    .cta-section h2 {
+      font-family:var(--ff-display); font-size:clamp(2.2rem,4vw,3.5rem);
+      color:white; line-height:1.1; letter-spacing:-0.02em; margin-bottom:1.25rem;
+    }
+    .cta-section h2 em { font-style:italic; color:var(--pink-light); }
+    .cta-section p {
+      font-size:1rem; color:rgba(255,255,255,0.65); line-height:1.7; margin-bottom:2.5rem;
+    }
+    .cta-btns { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
+
+    .btn-cta {
+      display:inline-flex; align-items:center; gap:0.5rem;
+      padding:0.9rem 1.875rem; border-radius:12px;
+      font-size:0.9rem; font-weight:700; transition:all 0.25s;
+    }
+    .btn-cta.solid {
+      background:white; color:var(--blue-deep);
+      box-shadow:0 4px 18px rgba(0,0,0,0.2);
+    }
+    .btn-cta.solid:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,0.3); }
+    .btn-cta.outline {
+      background:transparent; color:rgba(255,255,255,0.85);
+      border:1.5px solid rgba(255,255,255,0.25); font-weight:500;
+    }
+    .btn-cta.outline:hover { background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.45); }
+
+    /* ── FOOTER ───────────────────────────────────── */
+    footer { background:#12101e; padding:4rem 2.5rem 2rem; }
+
+    .footer-grid {
+      max-width:1100px; margin:0 auto;
+      display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:3rem;
+      padding-bottom:3rem; border-bottom:1px solid rgba(255,255,255,0.07);
+    }
+
+    .footer-name {
+      font-family:var(--ff-display); font-size:1.3rem; color:white;
+      display:flex; align-items:center; gap:0.6rem; margin-bottom:0.875rem;
+    }
+    .footer-star { color:var(--pink-soft); font-size:1rem; }
+    .footer-brand p { font-size:0.875rem; color:rgba(255,255,255,0.4); line-height:1.75; max-width:250px; }
+
+    .footer-col h4 {
+      font-size:0.78rem; font-weight:600; color:rgba(255,255,255,0.45);
+      text-transform:uppercase; letter-spacing:0.07em; margin-bottom:1rem;
+    }
+    .footer-col a {
+      display:block; font-size:0.875rem; color:rgba(255,255,255,0.45);
+      margin-bottom:0.5rem; transition:color 0.2s;
+    }
+    .footer-col a:hover { color:var(--blue-light); }
+
+    .footer-bottom {
+      max-width:1100px; margin:2rem auto 0;
+      display:flex; justify-content:space-between; align-items:center;
+      flex-wrap:wrap; gap:1rem;
+    }
+    .footer-bottom p { font-size:0.8rem; color:rgba(255,255,255,0.28); }
+    .footer-badge {
+      display:flex; align-items:center; gap:0.5rem;
+      font-size:0.78rem; color:rgba(255,255,255,0.3);
+    }
+    .footer-badge .dot { width:6px; height:6px; border-radius:50%; background:#69d5a0; animation:pulse-dot 2.5s infinite; }
+
+    /* ── RESPONSIVE ───────────────────────────────── */
+    @media (max-width:900px) {
+      .hero-inner    { grid-template-columns:1fr; }
+      .hero-right    { display:none; }
+      .about-grid    { grid-template-columns:1fr; gap:3rem; }
+      .features-grid { grid-template-columns:1fr; }
+      .fcard.wide    { grid-column:span 1; flex-direction:column; gap:1rem; }
+      .footer-grid   { grid-template-columns:1fr 1fr; }
+    }
+    @media (max-width:640px) {
+      nav { padding:0 1.25rem; }
+      .hero { padding:6rem 1.25rem 4rem; }
+      .about-section,.features-section,.cta-section { padding:4rem 1.25rem; }
+      footer { padding:3rem 1.25rem 1.5rem; }
+      .footer-grid { grid-template-columns:1fr; gap:2rem; }
+      .nav-links a:not(.nav-cta) { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3L13.8 8.2L19 9L14.5 13.2L15.8 18.5L12 15.8L8.2 18.5L9.5 13.2L5 9L10.2 8.2L12 3Z"
+            fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      Seren
+    </a>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#features">Features</a>
+      {% if current_user %}
+        <div class="nav-user">
+          <span>{{ current_user.email }}</span>
+        </div>
+        <a href="{{ url_for('logout') }}">Logout</a>
+        <a href="{{ url_for('chat_page') }}" class="nav-cta">Chat Now</a>
+      {% else %}
+        <a href="{{ url_for('login', next=url_for('chat_page')) }}" class="nav-cta">Login</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-blob-pink"></div>
+    <div class="hero-blob-blue"></div>
+
+    <div class="hero-inner">
+      <div class="hero-left">
+        <div class="hero-eyebrow">
+          <span class="pulse"></span>
+          Available 24 / 7
+        </div>
+        <h1>Your <em>mental wellness</em> journey starts <span class="rose">here.</span></h1>
+        <p class="hero-sub">
+          A compassionate AI companion ready to listen, reflect, and support — in a soft, judgment-free space designed around your wellbeing.
+        </p>
+        <div class="hero-btns">
+          <a href="{{ url_for('chat_page') if current_user else url_for('login', next=url_for('chat_page')) }}" class="btn-primary">
+            {% if current_user %}Start Talking Free{% else %}Login to Chat{% endif %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+          <a href="#about" class="btn-secondary">Learn More</a>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="float-tag">✨ Feeling calmer already?</div>
+        <div class="hero-card">
+          <div class="hc-header">
+            <div class="hc-icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 3L13.8 8.2L19 9L14.5 13.2L15.8 18.5L12 15.8L8.2 18.5L9.5 13.2L5 9L10.2 8.2L12 3Z"
+                  fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="hc-title">Seren</div>
+              <div class="hc-status"><span class="dot"></span> Online · AI Companion</div>
+            </div>
+          </div>
+
+          <div class="hc-messages">
+            <div class="hcm bot">
+              <div class="hcm-av">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L13.5 7.5L18 9L13.5 10.5L12 15L10.5 10.5L6 9L10.5 7.5L12 3Z" fill="rgba(255,255,255,0.3)" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="hcm-b">Namaste ✨ How are you feeling today?</div>
+            </div>
+            <div class="hcm user">
+              <div class="hcm-b">A bit anxious and overwhelmed lately…</div>
+            </div>
+            <div class="hcm bot">
+              <div class="hcm-av">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L13.5 7.5L18 9L13.5 10.5L12 15L10.5 10.5L6 9L10.5 7.5L12 3Z" fill="rgba(255,255,255,0.3)" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="hcm-b">That's completely valid. Let's take it one breath at a time 💙</div>
+            </div>
+            <div class="hcm user">
+              <div class="hcm-b">Thank you for listening 🩷</div>
+            </div>
+          </div>
+
+          <div class="hc-input-row">
+            <input
+              id="homePrompt"
+              class="hc-input"
+              type="text"
+              data-chat-url="{{ url_for('chat_page') }}"
+              placeholder="Share what's on your mind..."
+              aria-label="Start a chat message"
+            />
+            <button class="hc-send" id="homePromptSend" type="button" aria-label="Send">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat">
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Always Available</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">100%</div>
+        <div class="stat-label">Private & Confidential</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">Patient & Non-Judgmental</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">Free</div>
+        <div class="stat-label">No Cost to Start</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <section id="about" class="about-section">
+    <div class="section-inner">
+      <div class="about-grid">
+        <div class="about-text">
+          <span class="section-tag">Meet Seren</span>
+          <h2>An <em>empathetic ear</em>, always within reach.</h2>
+          <p>
+            Seren is your safe digital space to reflect, breathe, and express your feelings freely. Your compassionate AI companion listens without judgment and helps you untangle your thoughts — one conversation at a time.
+          </p>
+          <ul class="about-list">
+            <li><span class="chip chip-blue">💬</span> Empathetic AI conversations that feel human</li>
+            <li><span class="chip chip-pink">🧘</span> Mood reflection and gentle journaling</li>
+            <li><span class="chip chip-blue">📊</span> Track your emotional growth over time</li>
+            <li><span class="chip chip-pink">🔒</span> 100% private and fully confidential</li>
+          </ul>
+        </div>
+
+        <div class="about-preview">
+          <div class="ap-hdr">
+            <div class="ap-dots">
+              <div class="ap-dot"></div><div class="ap-dot"></div><div class="ap-dot"></div>
+            </div>
+            <span class="ap-name">Seren · Therapy Chat</span>
+          </div>
+          <div class="ap-body">
+            <div class="apm bot">
+              <div class="apm-av"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L13.5 7.5L18 9L13.5 10.5L12 15L10.5 10.5L6 9L10.5 7.5L12 3Z" fill="rgba(255,255,255,0.3)" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+              <div class="apm-b">Hey there ✨ How are you feeling today?</div>
+            </div>
+            <div class="apm user">
+              <div class="apm-b">A bit anxious lately…</div>
+            </div>
+            <div class="apm bot">
+              <div class="apm-av"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L13.5 7.5L18 9L13.5 10.5L12 15L10.5 10.5L6 9L10.5 7.5L12 3Z" fill="rgba(255,255,255,0.3)" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+              <div class="apm-b">That's completely okay. Let's breathe through it together 💙</div>
+            </div>
+            <div class="apm user">
+              <div class="apm-b">Thank you for listening 🩷</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="features-section">
+    <div class="features-hdr">
+      <span class="section-tag">What We Offer</span>
+      <h2>Everything you need to <em>feel supported.</em></h2>
+      <p>Thoughtfully designed features that put your emotional wellbeing at the centre.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="fcard blue-card">
+        <div class="fcard-icon bi">💭</div>
+        <h3>Express Freely</h3>
+        <p>Share your thoughts, feelings, and concerns in a completely judgment-free environment. Seren is here to listen and truly understand, at your pace.</p>
+      </div>
+
+      <div class="fcard pink-card">
+        <div class="fcard-icon pi">🎯</div>
+        <h3>Personalised Support</h3>
+        <p>Receive tailored guidance built around your unique emotional patterns and your personal mental wellness journey.</p>
+      </div>
+
+      <div class="fcard pink-card">
+        <div class="fcard-icon pi">📈</div>
+        <h3>Track Your Growth</h3>
+        <p>Monitor your emotional wellbeing over time with meaningful insights and mood tracking that celebrate how far you've come.</p>
+      </div>
+
+      <div class="fcard blue-card">
+        <div class="fcard-icon bi">🔐</div>
+        <h3>Privacy First</h3>
+        <p>Your conversations are fully encrypted and completely confidential. Your trust and safety are always the number one priority.</p>
+      </div>
+
+      <div class="fcard wide blue-card">
+        <div class="fcard-icon bi">✨</div>
+        <div>
+          <h3>Available Any Time, Any Day</h3>
+          <p>Whether it's 3am on a Tuesday or a quiet Sunday afternoon, Seren is always here — no appointments, no waiting rooms, no judgment. Just a calm, compassionate presence whenever you need it most.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="cta-orb cta-orb-1"></div>
+    <div class="cta-orb cta-orb-2"></div>
+    <div class="cta-inner">
+      <span class="cta-chip">🌟 You Are Not Alone</span>
+      <h2>Ready to begin your<br><em>wellness journey?</em></h2>
+      <p>Not feeling your best? You're just one conversation away from support. This is a safe place — your information stays confidential, and you will never be judged.</p>
+      <div class="cta-btns">
+        <a href="{{ url_for('chat_page') if current_user else url_for('login', next=url_for('chat_page')) }}" class="btn-cta solid">
+          {% if current_user %}Begin with Seren{% else %}Login with OTP{% endif %}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <a href="#features" class="btn-cta outline">Explore Features</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-name">
+          <span class="footer-star">✦</span> Seren
+        </div>
+        <p>Your trusted AI companion for mental wellness — available every hour of every day.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#features">Features</a>
+        <a href="#about">About</a>
+        <a href="{{ url_for('chat_page') if current_user else url_for('login', next=url_for('chat_page')) }}">Start Chat</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Cookie Policy</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="#">Crisis Hotline</a>
+        <a href="#">Mental Health Resources</a>
+        <a href="#">FAQ</a>
+        <a href="#">Contact Us</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Seren. All rights reserved.</p>
+      <div class="footer-badge"><span class="dot"></span> AI systems operating normally</div>
+    </div>
+  </footer>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

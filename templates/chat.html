@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seren · Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #f8f7ff;
+      --white:       #ffffff;
+
+      --blue-deep:   #2e4fa3;
+      --blue-mid:    #4a6fd4;
+      --blue-soft:   #7fa3e8;
+      --blue-light:  #c8d8f8;
+      --blue-pale:   #eef2fd;
+
+      --pink-deep:   #b0527a;
+      --pink-mid:    #d47898;
+      --pink-soft:   #eeaac0;
+      --pink-light:  #f8d8e5;
+      --pink-pale:   #fdf0f5;
+
+      --text:        #1c1830;
+      --text-muted:  #7a718e;
+      --border:      #e4ddf5;
+      --shadow-blue: rgba(46,79,163,0.10);
+      --shadow-pink: rgba(176,82,122,0.08);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      height: 100vh; overflow: hidden;
+      background: var(--bg);
+    }
+
+    /* Decorative blobs */
+    .blob {
+      position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+    }
+    .blob-pink {
+      width: 480px; height: 480px;
+      top: -15%; right: -8%;
+      background: radial-gradient(ellipse, rgba(238,170,192,0.22) 0%, transparent 68%);
+    }
+    .blob-blue {
+      width: 420px; height: 420px;
+      bottom: -18%; left: -8%;
+      background: radial-gradient(ellipse, rgba(127,163,232,0.18) 0%, transparent 68%);
+    }
+
+    /* Grain */
+    .grain {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.5;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    .chat-container {
+      display: flex; flex-direction: column;
+      height: 100vh; position: relative; z-index: 1;
+      max-width: 800px; margin: 0 auto;
+    }
+
+    /* ── HEADER ─────────────────────── */
+    .chat-header {
+      padding: 0.875rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(248,247,255,0.82);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left { display: flex; align-items: center; gap: 0.875rem; }
+
+    .logo {
+      width: 44px; height: 44px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--blue-mid) 0%, var(--pink-mid) 100%);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(74,111,212,0.3);
+      flex-shrink: 0;
+    }
+    .logo svg { width: 22px; height: 22px; }
+
+    .header-info h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.3rem; color: var(--text);
+      letter-spacing: -0.01em; line-height: 1.1;
+    }
+
+    .header-status {
+      display: flex; align-items: center; gap: 0.4rem; margin-top: 0.15rem;
+    }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #69d5a0;
+      animation: pulse-dot 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.6; transform:scale(1.3); }
+    }
+    .header-status span { font-size: 0.72rem; color: var(--text-muted); font-weight: 400; }
+
+    .icon-btn {
+      background: none; border: none; cursor: pointer;
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); transition: all 0.2s;
+    }
+    .icon-btn:hover { background: var(--blue-pale); color: var(--blue-mid); }
+    .user-menu {
+      display:flex; align-items:center; gap:0.65rem;
+      color:var(--text-muted); font-size:0.78rem; font-weight:600;
+    }
+    .logout-link {
+      color:var(--blue-mid); text-decoration:none;
+      padding:0.45rem 0.65rem; border-radius:8px;
+      transition:background 0.2s;
+    }
+    .logout-link:hover { background:var(--blue-pale); }
+
+    /* ── MESSAGES ───────────────────── */
+    .messages-container {
+      flex: 1; overflow-y: auto; scroll-behavior: smooth;
+      padding: 1.5rem 1.25rem;
+      display: flex; flex-direction: column; gap: 1.1rem;
+    }
+    .messages-container::-webkit-scrollbar { width: 4px; }
+    .messages-container::-webkit-scrollbar-track { background: transparent; }
+    .messages-container::-webkit-scrollbar-thumb {
+      background: var(--blue-light); border-radius: 4px;
+    }
+
+    .date-divider {
+      text-align: center; position: relative; margin: 0.25rem 0;
+    }
+    .date-divider::before {
+      content:''; position:absolute; top:50%; left:0; right:0;
+      height:1px; background: var(--border);
+    }
+    .date-divider span {
+      position:relative; background:var(--bg);
+      padding:0 0.75rem; font-size:0.68rem;
+      color:var(--text-muted); font-weight:500;
+      letter-spacing:0.06em; text-transform:uppercase;
+    }
+
+    .message {
+      display: flex; gap: 0.6rem;
+      animation: slideUp 0.35s cubic-bezier(0.16,1,0.3,1);
+    }
+    @keyframes slideUp {
+      from { opacity:0; transform:translateY(14px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .message.user { flex-direction: row-reverse; }
+
+    .bot-avatar {
+      width: 34px; height: 34px; border-radius: 11px;
+      background: linear-gradient(135deg, var(--blue-mid), var(--pink-mid));
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; align-self: flex-end; margin-bottom: 2px;
+      box-shadow: 0 2px 8px rgba(74,111,212,0.22);
+    }
+    .bot-avatar svg { width: 16px; height: 16px; }
+
+    .message-content {
+      display: flex; flex-direction: column; gap: 0.2rem;
+      max-width: 70%;
+    }
+    .message.user .message-content { align-items: flex-end; }
+
+    .message-bubble {
+      padding: 0.875rem 1.1rem; border-radius: 1.25rem;
+      font-size: 0.875rem; line-height: 1.65;
+    }
+    .message.bot .message-bubble {
+      background: var(--white); color: var(--text);
+      border-bottom-left-radius: 5px;
+      box-shadow: 0 2px 14px var(--shadow-blue), 0 0 0 1px var(--border);
+    }
+    .message.user .message-bubble {
+      background: linear-gradient(140deg, var(--blue-mid) 0%, var(--blue-deep) 100%);
+      color: #fff; border-bottom-right-radius: 5px;
+      box-shadow: 0 4px 16px rgba(46,79,163,0.28);
+    }
+
+    .message-time { font-size:0.68rem; color:var(--text-muted); padding:0 0.3rem; }
+
+    /* ── TYPING ─────────────────────── */
+    .typing-indicator {
+      display: none; gap: 0.6rem; padding: 0 1.25rem;
+      animation: slideUp 0.35s cubic-bezier(0.16,1,0.3,1);
+    }
+    .typing-indicator.active { display: flex; }
+
+    .typing-bubble {
+      background: var(--white); padding: 0.875rem 1.1rem;
+      border-radius: 1.25rem; border-bottom-left-radius: 5px;
+      box-shadow: 0 2px 14px var(--shadow-blue), 0 0 0 1px var(--border);
+      display: flex; gap: 5px; align-items: center;
+    }
+    .typing-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--pink-soft);
+      animation: typingBounce 1.2s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay:.18s; background: var(--blue-soft); }
+    .typing-dot:nth-child(3) { animation-delay:.36s; background: var(--pink-soft); }
+    @keyframes typingBounce {
+      0%,80%,100% { transform:scale(1) translateY(0); opacity:0.5; }
+      40%          { transform:scale(1.3) translateY(-4px); opacity:1; }
+    }
+
+    /* ── ERROR ──────────────────────── */
+    .error-banner {
+      display: none; align-items: center; justify-content: space-between;
+      margin: 0 1.25rem 0.5rem; padding: 0.75rem 1rem;
+      background: var(--pink-pale); border: 1px solid var(--pink-light);
+      border-radius: 0.875rem; font-size: 0.8rem; color: var(--pink-deep);
+    }
+    .error-banner.active { display: flex; }
+    .error-banner button {
+      background: none; border: none; color: var(--pink-deep);
+      cursor: pointer; font-size: 1.2rem; opacity:0.7; transition:opacity 0.2s;
+    }
+    .error-banner button:hover { opacity:1; }
+
+    /* ── INPUT ──────────────────────── */
+    .input-area {
+      background: rgba(248,247,255,0.85);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 0.875rem 1.25rem;
+      padding-bottom: max(0.875rem, env(safe-area-inset-bottom));
+    }
+    .input-wrapper { display: flex; align-items: flex-end; gap: 0.75rem; }
+
+    .input-container {
+      flex: 1; background: var(--white);
+      border: 1.5px solid var(--border); border-radius: 1.25rem;
+      padding: 0.75rem 1.1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px var(--shadow-blue);
+    }
+    .input-container:focus-within {
+      border-color: var(--blue-soft);
+      box-shadow: 0 0 0 3px rgba(127,163,232,0.18), 0 2px 8px var(--shadow-blue);
+    }
+    #messageInput {
+      width:100%; background:transparent; border:none; outline:none;
+      font-size:0.875rem; color:var(--text); resize:none;
+      font-family:'DM Sans',sans-serif; max-height:120px; line-height:1.55;
+    }
+    #messageInput::placeholder { color:var(--text-muted); }
+
+    .send-btn {
+      width: 46px; height: 46px; flex-shrink: 0;
+      border: none; border-radius: 13px;
+      background: linear-gradient(135deg, var(--blue-mid) 0%, var(--pink-mid) 100%);
+      color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.22s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 0 4px 16px rgba(74,111,212,0.35);
+    }
+    .send-btn:hover:not(:disabled) {
+      transform: scale(1.06) translateY(-1px);
+      box-shadow: 0 6px 20px rgba(74,111,212,0.42);
+    }
+    .send-btn:active:not(:disabled) { transform: scale(0.96); }
+    .send-btn:disabled { background: var(--border); box-shadow: none; cursor: not-allowed; }
+
+    .disclaimer {
+      text-align:center; font-size:0.68rem; color:var(--text-muted);
+      margin-top:0.6rem; letter-spacing:0.01em;
+    }
+
+    @media (max-width:640px) {
+      .message-content { max-width: 84%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blob blob-pink"></div>
+  <div class="blob blob-blue"></div>
+  <div class="grain"></div>
+
+  <div class="chat-container">
+
+    <!-- HEADER -->
+    <div class="chat-header">
+      <div class="header-left">
+        <div class="logo">
+          <!-- Star / sparkle icon for Seren -->
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3L13.8 8.2L19 9L14.5 13.2L15.8 18.5L12 15.8L8.2 18.5L9.5 13.2L5 9L10.2 8.2L12 3Z"
+              fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="19" cy="5" r="1.2" fill="rgba(255,255,255,0.6)"/>
+            <circle cx="5" cy="19" r="0.9" fill="rgba(255,255,255,0.5)"/>
+          </svg>
+        </div>
+        <div class="header-info">
+          <h1>Seren</h1>
+          <div class="header-status">
+            <div class="status-dot"></div>
+            <span>AI Therapy Companion &nbsp;·&nbsp; Here for you</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="user-menu">
+          {% if current_user %}<span>{{ current_user.email }}</span>{% endif %}
+          <a class="logout-link" href="{{ url_for('logout') }}">Logout</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="messages-container" id="messagesContainer">
+      <div class="date-divider"><span>Today</span></div>
+
+      <div class="message bot">
+        <div class="bot-avatar">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 3L13.5 7.5L18 9L13.5 10.5L12 15L10.5 10.5L6 9L10.5 7.5L12 3Z"
+              fill="rgba(255,255,255,0.35)" stroke="white" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="message-content">
+          <div class="message-bubble">
+            Hi, I'm Seren ✨ — your gentle space to breathe, reflect, and feel heard. Whatever's on your mind, I'm here without judgment.<br><br>How are you feeling today?
+          </div>
+          <div class="message-time" id="initialTime"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TYPING -->
+    <div class="typing-indicator" id="typingIndicator">
+      <div class="bot-avatar">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3L13.5 7.5L18 9L13.5 10.5L12 15L10.5 10.5L6 9L10.5 7.5L12 3Z"
+            fill="rgba(255,255,255,0.35)" stroke="white" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="typing-bubble">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+
+    <!-- ERROR -->
+    <div class="error-banner" id="errorBanner">
+      <span id="errorText">Seren is having trouble responding right now.</span>
+      <button type="button" id="dismissError" aria-label="Dismiss">×</button>
+    </div>
+
+    <!-- INPUT -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <div class="input-container">
+          <textarea id="messageInput" placeholder="Share what's on your mind…" rows="1"></textarea>
+        </div>
+        <button class="send-btn" id="sendBtn" disabled aria-label="Send">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <p class="disclaimer">Seren is an AI companion — not a substitute for professional mental health care</p>
+    </div>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
