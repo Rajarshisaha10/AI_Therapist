@@ -1,7 +1,9 @@
 import os
 import random
 import re
+import smtplib
 import time
+from email.message import EmailMessage
 
 from dotenv import load_dotenv
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
@@ -46,9 +48,11 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 MAX_HISTORY_MESSAGES = int(os.getenv("MAX_HISTORY_MESSAGES", "10"))
 OTP_EXPIRY_SECONDS = int(os.getenv("OTP_EXPIRY_SECONDS", "300"))
 SHOW_OTP_IN_FLASH = os.getenv("SHOW_OTP_IN_FLASH", "true").lower() == "true"
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_FROM_NUMBER = os.getenv("TWILIO_FROM_NUMBER")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USERNAME = os.getenv("EMAIL_USERNAME")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+EMAIL_FROM = os.getenv("EMAIL_FROM") or EMAIL_USERNAME
 
 _groq_client = None
 
@@ -106,44 +110,39 @@ def is_valid_email(email):
     return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email))
 
 
-def is_valid_phone(phone):
-    digits = re.sub(r"\D", "", phone)
-    return 10 <= len(digits) <= 15
-
-
-def normalize_phone(phone):
-    cleaned = re.sub(r"[^\d+]", "", phone)
-    if cleaned.startswith("+"):
-        return cleaned
-    return f"+{cleaned}"
-
-
-def twilio_configured():
+def email_configured():
     return (
-        TWILIO_ACCOUNT_SID
-        and TWILIO_AUTH_TOKEN
-        and TWILIO_FROM_NUMBER
-        and not TWILIO_ACCOUNT_SID.startswith("your_")
-        and not TWILIO_AUTH_TOKEN.startswith("your_")
-        and not TWILIO_FROM_NUMBER.startswith("your_")
+        EMAIL_HOST
+        and EMAIL_PORT
+        and EMAIL_USERNAME
+        and EMAIL_PASSWORD
+        and EMAIL_FROM
+        and not EMAIL_USERNAME.startswith("your_")
+        and not EMAIL_PASSWORD.startswith("your_")
     )
 
 
-def send_otp_to_phone(phone, otp):
-    if not twilio_configured():
-        print(f"OTP for {phone}: {otp}")
+def send_otp_to_email(email, otp):
+    if not email_configured():
+        print(f"OTP for {email}: {otp}")
         return "console"
 
-    from twilio.rest import Client
-
-    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-    message = client.messages.create(
-        body=f"Your Seren verification OTP is {otp}. It expires in {OTP_EXPIRY_SECONDS // 60} minutes.",
-        from_=TWILIO_FROM_NUMBER,
-        to=normalize_phone(phone),
+    message = EmailMessage()
+    message["Subject"] = "Your Seren verification code"
+    message["From"] = EMAIL_FROM
+    message["To"] = email
+    message.set_content(
+        f"Your Seren verification OTP is {otp}.\n\n"
+        f"It expires in {OTP_EXPIRY_SECONDS // 60} minutes."
     )
-    print(f"Twilio OTP message sent: {message.sid}")
-    return "twilio"
+
+    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as smtp:
+        smtp.starttls()
+        smtp.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+        smtp.send_message(message)
+
+    print(f"OTP email sent to {email}")
+    return "email"
 
 
 @app.context_processor
@@ -167,30 +166,25 @@ def login():
 
     if request.method == "POST":
         email = (request.form.get("email") or "").strip().lower()
-        phone = (request.form.get("phone") or "").strip()
 
         if not is_valid_email(email):
             flash("Please enter a valid email address.", "error")
-            return render_template("login.html", next_url=next_url, email=email, phone=phone)
-        if not is_valid_phone(phone):
-            flash("Please enter a valid phone number.", "error")
-            return render_template("login.html", next_url=next_url, email=email, phone=phone)
+            return render_template("login.html", next_url=next_url, email=email)
 
         otp = f"{random.randint(0, 999999):06d}"
         session["pending_login"] = {
             "email": email,
-            "phone": phone,
             "otp": otp,
             "expires_at": int(time.time()) + OTP_EXPIRY_SECONDS,
             "next_url": next_url,
         }
         session.modified = True
 
-        delivery_method = send_otp_to_phone(phone, otp)
+        delivery_method = send_otp_to_email(email, otp)
         if SHOW_OTP_IN_FLASH or delivery_method == "console":
             flash(f"Development OTP: {otp}", "info")
         else:
-            flash("We sent an OTP to your phone number.", "info")
+            flash("We sent an OTP to your email.", "info")
         return redirect(url_for("verify_otp"))
 
     return render_template("login.html", next_url=next_url)
@@ -200,7 +194,7 @@ def login():
 def verify_otp():
     pending_login = session.get("pending_login")
     if not pending_login:
-        flash("Start by entering your email and phone number.", "info")
+        flash("Start by entering your email.", "info")
         return redirect(url_for("login"))
 
     if request.method == "POST":
@@ -212,21 +206,20 @@ def verify_otp():
 
         if submitted_otp != pending_login.get("otp"):
             flash("Invalid OTP. Please try again.", "error")
-            return render_template("verify_otp.html", phone=pending_login.get("phone"))
+            return render_template("verify_otp.html", email=pending_login.get("email"))
 
         email = pending_login["email"]
         session["user"] = {
             "id": email,
             "name": email.split("@")[0],
             "email": email,
-            "phone": pending_login["phone"],
         }
         next_url = sanitize_next_url(pending_login.get("next_url"))
         session.pop("pending_login", None)
         session.modified = True
         return redirect(next_url)
 
-    return render_template("verify_otp.html", phone=pending_login.get("phone"))
+    return render_template("verify_otp.html", email=pending_login.get("email"))
 
 
 @app.route("/chat")

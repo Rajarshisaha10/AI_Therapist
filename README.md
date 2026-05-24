@@ -1,6 +1,6 @@
 # AI Therapist
 
-Flask chat app with Groq responses and Twilio SMS OTP login.
+Flask chat app with Groq responses and Gmail email OTP login.
 
 ## Local Setup
 
@@ -28,4 +28,11 @@ Use these settings if deploying manually on Render:
 
 Add the environment variables from `.env.example` in the Render dashboard. Do not upload `.env`.
 
-For Twilio SMS sending, this app does not need a Twilio webhook URL. Use your Render app URL if Twilio asks for a website or app URL.
+For Gmail OTP sending, use a Google App Password for `EMAIL_PASSWORD`. Do not use your normal Gmail password.
+
+To create a Gmail App Password:
+
+1. Turn on 2-Step Verification in your Google account.
+2. Open Google Account > Security > App passwords.
+3. Create an app password for this project.
+4. Use the generated 16-character password as `EMAIL_PASSWORD`.

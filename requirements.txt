@@ -2,4 +2,3 @@ Flask
 groq
 gunicorn
 python-dotenv
-twilio

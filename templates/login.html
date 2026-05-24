@@ -43,7 +43,7 @@
 <body>
   <main class="auth-card">
     <div class="brand">Seren</div>
-    <p>Log in with your email. We will confirm it by sending an OTP to your phone number.</p>
+    <p>Log in with your email. We will send a one-time verification code to your inbox.</p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -58,9 +58,6 @@
 
       <label for="email">Email</label>
       <input id="email" name="email" type="email" value="{{ email or '' }}" placeholder="you@example.com" required>
-
-      <label for="phone">Phone number</label>
-      <input id="phone" name="phone" type="tel" value="{{ phone or '' }}" placeholder="+91 98765 43210" required>
 
       <button type="submit">Send OTP</button>
     </form>
