@@ -23,6 +23,8 @@ services:
         value: smtp.gmail.com
       - key: EMAIL_PORT
         value: "587"
+      - key: EMAIL_TIMEOUT_SECONDS
+        value: "10"
       - key: SECRET_KEY
         generateValue: true
       - key: GROQ_API_KEY

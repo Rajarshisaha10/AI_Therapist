@@ -48,7 +48,7 @@ SYSTEM_INSTRUCTION = (
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 MAX_HISTORY_MESSAGES = int(os.getenv("MAX_HISTORY_MESSAGES", "10"))
 OTP_EXPIRY_SECONDS = int(os.getenv("OTP_EXPIRY_SECONDS", "300"))
-SHOW_OTP_IN_FLASH = os.getenv("SHOW_OTP_IN_FLASH", "true").lower() == "true"
+SHOW_OTP_IN_FLASH = os.getenv("SHOW_OTP_IN_FLASH", "false").lower() == "true"
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_TIMEOUT_SECONDS = int(os.getenv("EMAIL_TIMEOUT_SECONDS", "10"))
@@ -126,11 +126,10 @@ def email_configured():
 
 def send_otp_to_email(email, otp):
     if SHOW_OTP_IN_FLASH:
-        print(f"OTP for {email}: {otp}")
-        return "console"
+        print(f"[DEV] OTP for {email}: {otp}")
 
     if not email_configured():
-        print(f"OTP for {email}: {otp}")
+        print(f"[WARN] Email not configured. OTP for {email}: {otp}")
         return "console"
 
     message = EmailMessage()
@@ -142,13 +141,18 @@ def send_otp_to_email(email, otp):
         f"It expires in {OTP_EXPIRY_SECONDS // 60} minutes."
     )
 
-    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=EMAIL_TIMEOUT_SECONDS) as smtp:
-        smtp.starttls()
-        smtp.login(EMAIL_USERNAME, EMAIL_PASSWORD)
-        smtp.send_message(message)
-
-    print(f"OTP email sent to {email}")
-    return "email"
+    try:
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=EMAIL_TIMEOUT_SECONDS) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+            smtp.send_message(message)
+        print(f"[INFO] OTP email sent to {email}")
+        return "email"
+    except (OSError, SMTPException) as exc:
+        print(f"[ERROR] Failed to send OTP email to {email}: {type(exc).__name__}: {exc}")
+        raise
 
 
 @app.context_processor
