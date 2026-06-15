@@ -1,10 +1,10 @@
 import os
 import random
 import re
-import smtplib
+import sqlite3
 import time
-from email.message import EmailMessage
-from smtplib import SMTPException
+
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from dotenv import load_dotenv
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
@@ -47,16 +47,34 @@ SYSTEM_INSTRUCTION = (
 
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 MAX_HISTORY_MESSAGES = int(os.getenv("MAX_HISTORY_MESSAGES", "10"))
-OTP_EXPIRY_SECONDS = int(os.getenv("OTP_EXPIRY_SECONDS", "300"))
-SHOW_OTP_IN_FLASH = os.getenv("SHOW_OTP_IN_FLASH", "false").lower() == "true"
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_TIMEOUT_SECONDS = int(os.getenv("EMAIL_TIMEOUT_SECONDS", "10"))
-EMAIL_USERNAME = os.getenv("EMAIL_USERNAME")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-EMAIL_FROM = os.getenv("EMAIL_FROM") or EMAIL_USERNAME
+DATABASE = os.getenv("DATABASE", "mindwell.db")
 
 _groq_client = None
+
+
+def get_db():
+    db = sqlite3.connect(DATABASE)
+    db.row_factory = sqlite3.Row
+    return db
+
+
+def init_db():
+    db = get_db()
+    try:
+        db.execute(
+            """CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )"""
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
+init_db()
 
 
 def get_groq_client():
@@ -103,56 +121,13 @@ def sanitize_next_url(next_url):
 
 def login_required_response():
     if request.path.startswith("/api/"):
-        return jsonify({"error": "Please log in with email and OTP to use chat."}), 401
+        return jsonify({"error": "Please log in to use chat."}), 401
     next_url = request.full_path.rstrip("?")
     return redirect(url_for("login", next=next_url))
 
 
 def is_valid_email(email):
     return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email))
-
-
-def email_configured():
-    return (
-        EMAIL_HOST
-        and EMAIL_PORT
-        and EMAIL_USERNAME
-        and EMAIL_PASSWORD
-        and EMAIL_FROM
-        and not EMAIL_USERNAME.startswith("your_")
-        and not EMAIL_PASSWORD.startswith("your_")
-    )
-
-
-def send_otp_to_email(email, otp):
-    if SHOW_OTP_IN_FLASH:
-        print(f"[DEV] OTP for {email}: {otp}")
-
-    if not email_configured():
-        print(f"[WARN] Email not configured. OTP for {email}: {otp}")
-        return "console"
-
-    message = EmailMessage()
-    message["Subject"] = "Your Seren verification code"
-    message["From"] = EMAIL_FROM
-    message["To"] = email
-    message.set_content(
-        f"Your Seren verification OTP is {otp}.\n\n"
-        f"It expires in {OTP_EXPIRY_SECONDS // 60} minutes."
-    )
-
-    try:
-        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=EMAIL_TIMEOUT_SECONDS) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
-            smtp.login(EMAIL_USERNAME, EMAIL_PASSWORD)
-            smtp.send_message(message)
-        print(f"[INFO] OTP email sent to {email}")
-        return "email"
-    except (OSError, SMTPException) as exc:
-        print(f"[ERROR] Failed to send OTP email to {email}: {type(exc).__name__}: {exc}")
-        raise
 
 
 @app.context_processor
@@ -170,75 +145,80 @@ def healthz():
     return jsonify({"status": "ok"})
 
 
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+        confirm = request.form.get("confirm_password") or ""
+
+        if not is_valid_email(email):
+            flash("Please enter a valid email address.", "error")
+            return render_template("signup.html", email=email)
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.", "error")
+            return render_template("signup.html", email=email)
+
+        if password != confirm:
+            flash("Passwords do not match.", "error")
+            return render_template("signup.html", email=email)
+
+        db = get_db()
+        try:
+            db.execute(
+                "INSERT INTO users (email, password_hash) VALUES (?, ?)",
+                (email, generate_password_hash(password)),
+            )
+            db.commit()
+        except sqlite3.IntegrityError:
+            flash("An account with this email already exists.", "error")
+            return render_template("signup.html", email=email)
+        finally:
+            db.close()
+
+        session["user"] = {
+            "id": email,
+            "name": email.split("@")[0],
+            "email": email,
+        }
+        session.modified = True
+        return redirect(url_for("chat_page"))
+
+    return render_template("signup.html")
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     next_url = sanitize_next_url(request.args.get("next") or request.form.get("next"))
 
     if request.method == "POST":
         email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
 
         if not is_valid_email(email):
             flash("Please enter a valid email address.", "error")
             return render_template("login.html", next_url=next_url, email=email)
 
-        otp = f"{random.randint(0, 999999):06d}"
-        session["pending_login"] = {
-            "email": email,
-            "otp": otp,
-            "expires_at": int(time.time()) + OTP_EXPIRY_SECONDS,
-            "next_url": next_url,
-        }
-        session.modified = True
-
+        db = get_db()
         try:
-            delivery_method = send_otp_to_email(email, otp)
-        except (OSError, SMTPException) as exc:
-            print(f"Email OTP Error: {type(exc).__name__}: {exc}")
-            flash(
-                "We could not send the verification email. Please check the Gmail settings and try again.",
-                "error",
-            )
-            return render_template("login.html", next_url=next_url, email=email), 502
+            row = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        finally:
+            db.close()
 
-        if SHOW_OTP_IN_FLASH or delivery_method == "console":
-            flash(f"Development OTP: {otp}", "info")
-        else:
-            flash("We sent an OTP to your email.", "info")
-        return redirect(url_for("verify_otp"))
+        if not row or not check_password_hash(row["password_hash"], password):
+            flash("Invalid email or password.", "error")
+            return render_template("login.html", next_url=next_url, email=email)
 
-    return render_template("login.html", next_url=next_url)
-
-
-@app.route("/verify-otp", methods=["GET", "POST"])
-def verify_otp():
-    pending_login = session.get("pending_login")
-    if not pending_login:
-        flash("Start by entering your email.", "info")
-        return redirect(url_for("login"))
-
-    if request.method == "POST":
-        submitted_otp = (request.form.get("otp") or "").strip()
-        if int(time.time()) > pending_login.get("expires_at", 0):
-            session.pop("pending_login", None)
-            flash("That OTP expired. Please request a new one.", "error")
-            return redirect(url_for("login"))
-
-        if submitted_otp != pending_login.get("otp"):
-            flash("Invalid OTP. Please try again.", "error")
-            return render_template("verify_otp.html", email=pending_login.get("email"))
-
-        email = pending_login["email"]
         session["user"] = {
             "id": email,
             "name": email.split("@")[0],
             "email": email,
         }
-        next_url = sanitize_next_url(pending_login.get("next_url"))
-        session.pop("pending_login", None)
         session.modified = True
         return redirect(next_url)
 
-    return render_template("verify_otp.html", email=pending_login.get("email"))
+    return render_template("login.html", next_url=next_url)
 
 
 @app.route("/chat")

@@ -772,7 +772,7 @@
       <p>Not feeling your best? You're just one conversation away from support. This is a safe place — your information stays confidential, and you will never be judged.</p>
       <div class="cta-btns">
         <a href="{{ url_for('chat_page') if current_user else url_for('login', next=url_for('chat_page')) }}" class="btn-cta solid">
-          {% if current_user %}Begin with Seren{% else %}Login with OTP{% endif %}
+          {% if current_user %}Begin with Seren{% else %}Get Started Free{% endif %}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
         <a href="#features" class="btn-cta outline">Explore Features</a>

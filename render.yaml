@@ -15,23 +15,7 @@ services:
         value: llama-3.3-70b-versatile
       - key: MAX_HISTORY_MESSAGES
         value: "10"
-      - key: SHOW_OTP_IN_FLASH
-        value: "false"
-      - key: OTP_EXPIRY_SECONDS
-        value: "300"
-      - key: EMAIL_HOST
-        value: smtp.gmail.com
-      - key: EMAIL_PORT
-        value: "587"
-      - key: EMAIL_TIMEOUT_SECONDS
-        value: "10"
       - key: SECRET_KEY
         generateValue: true
       - key: GROQ_API_KEY
-        sync: false
-      - key: EMAIL_USERNAME
-        sync: false
-      - key: EMAIL_PASSWORD
-        sync: false
-      - key: EMAIL_FROM
         sync: false
